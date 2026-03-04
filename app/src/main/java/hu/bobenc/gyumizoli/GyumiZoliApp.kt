@@ -1,4 +1,7 @@
 package hu.bobenc.gyumizoli
 
-class GyumiZoliApp {
-}
+import android.app.Application
+import dagger.hilt.android.HiltAndroidApp
+
+@HiltAndroidApp
+class GyumiZoliApp : Application() {}
