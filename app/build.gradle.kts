@@ -57,6 +57,8 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
     implementation("androidx.compose.material:material-icons-extended")
+    implementation("com.barion:barionsdk:0.4.3")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     testImplementation(libs.junit)
