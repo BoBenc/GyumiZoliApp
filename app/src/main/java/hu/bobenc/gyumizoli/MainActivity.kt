@@ -11,14 +11,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import dagger.hilt.android.AndroidEntryPoint
 import hu.bobenc.gyumizoli.navigation.Screen
 import hu.bobenc.gyumizoli.ui.about.AboutUsView
+import hu.bobenc.gyumizoli.ui.categories.CategoriesView
 import hu.bobenc.gyumizoli.ui.common.NavigationBar
 import hu.bobenc.gyumizoli.ui.home.HomeView
+import hu.bobenc.gyumizoli.ui.productlist.ProductListView
 import hu.bobenc.gyumizoli.ui.search.SearchView
 import hu.bobenc.gyumizoli.ui.theme.GyumiZoliTheme
 
@@ -56,6 +60,30 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onNavigateToSearch = {
                                         navController.navigate(Screen.Search.route)
+                                    }
+                                )
+                            }
+
+                            composable(Screen.Categories.route) {
+                                CategoriesView(
+                                    onCategoryClick = { slug ->
+                                        navController.navigate("productlist/$slug")
+                                    }
+                                )
+                            }
+
+                            composable(
+                                route = "productlist/{categorySlug}",
+                                arguments = listOf(
+                                    navArgument("categorySlug") { type = NavType.StringType }
+                                )
+                            ) { backStackEntry ->
+                                val slug = backStackEntry.arguments?.getString("categorySlug") ?: "all"
+                                ProductListView(
+                                    categorySlug = slug,
+                                    onBackClick = { navController.popBackStack() },
+                                    onProductClick = { category, id ->
+                                        navController.navigate("detail/$category/$id")
                                     }
                                 )
                             }
