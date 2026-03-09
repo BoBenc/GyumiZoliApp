@@ -1,6 +1,9 @@
 package hu.bobenc.gyumizoli
 
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast.LENGTH_LONG
+import android.widget.Toast.makeText
 import androidx.activity.SystemBarStyle
 import android.graphics.Color as AndroidColor
 import androidx.activity.ComponentActivity
@@ -13,10 +16,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import barion.sdk.shared.BarionGatewayPlugin
@@ -25,6 +30,7 @@ import hu.bobenc.gyumizoli.navigation.Screen
 import hu.bobenc.gyumizoli.ui.about.AboutUsView
 import hu.bobenc.gyumizoli.ui.basket.BasketView
 import hu.bobenc.gyumizoli.ui.basket.BasketViewModel
+import hu.bobenc.gyumizoli.ui.basket.OrderSuccessView
 import hu.bobenc.gyumizoli.ui.basket.PaymentView
 import hu.bobenc.gyumizoli.ui.basket.ShippingDetailsView
 import hu.bobenc.gyumizoli.ui.categories.CategoriesView
@@ -32,6 +38,8 @@ import hu.bobenc.gyumizoli.ui.common.NavigationBar
 import hu.bobenc.gyumizoli.ui.home.HomeView
 import hu.bobenc.gyumizoli.ui.product.ProductDetailView
 import hu.bobenc.gyumizoli.ui.productlist.ProductListView
+import hu.bobenc.gyumizoli.ui.profile.OrdersView
+import hu.bobenc.gyumizoli.ui.profile.ProfileView
 import hu.bobenc.gyumizoli.ui.search.SearchView
 import hu.bobenc.gyumizoli.ui.theme.GyumiZoliTheme
 
@@ -46,6 +54,7 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(gyumiZoliGreen)
         )
         barionPlugin = BarionGatewayPlugin(this, null)
+
         setContent {
             GyumiZoliTheme {
                 val navController = rememberNavController()
@@ -53,13 +62,26 @@ class MainActivity : ComponentActivity() {
                 val basketItems by sharedBasketViewModel.basketItems.collectAsState()
                 val uniqueItemCount = basketItems.size
 
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
+
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     bottomBar = {
-                        NavigationBar(
-                            navController = navController,
-                            uniqueItemCount = uniqueItemCount
+                        val hideBottomBarScreens = listOf(
+                            "shipping_details",
+                            "payment",
+                            "order_success"
                         )
+
+                        val shouldHideBottomBar = hideBottomBarScreens.contains(currentRoute) || currentRoute?.startsWith("detail/") == true
+
+                        if (!shouldHideBottomBar) {
+                            NavigationBar(
+                                navController = navController,
+                                uniqueItemCount = uniqueItemCount
+                            )
+                        }
                     }
                 ) { innerPadding ->
                     Box(modifier = Modifier.padding(top = innerPadding.calculateTopPadding())) {
@@ -119,6 +141,12 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
 
+                            composable(Screen.Profile.route) {
+                                ProfileView(
+                                    onNavigateToOrders = { navController.navigate(Screen.Orders.route) }
+                                )
+                            }
+
                             composable(Screen.Basket.route) {
                                 BasketView(
                                     viewModel = sharedBasketViewModel,
@@ -140,13 +168,13 @@ class MainActivity : ComponentActivity() {
                             }
 
                             composable("payment") {
-                                val context = androidx.compose.ui.platform.LocalContext.current
+                                val context = LocalContext.current
                                 PaymentView(
                                     viewModel = sharedBasketViewModel,
                                     onStartBarionPayment = { secret ->
                                         barionPlugin.present(secret, null) { paymentResult ->
                                             val resultStr = paymentResult.toString()
-                                            android.util.Log.d("BarionResult", "Nyers válasz: $resultStr")
+                                            Log.d("BarionResult", "Nyers válasz: $resultStr")
 
                                             if (!resultStr.contains("Canceled", ignoreCase = true) &&
                                                 !resultStr.contains("Failed", ignoreCase = true) &&
@@ -156,7 +184,7 @@ class MainActivity : ComponentActivity() {
                                                     popUpTo(Screen.Basket.route) { inclusive = true }
                                                 }
                                             } else {
-                                                android.widget.Toast.makeText(context, "Fizetés megszakítva vagy sikertelen.", android.widget.Toast.LENGTH_LONG).show()
+                                                makeText(context, "Fizetés megszakítva vagy sikertelen.", LENGTH_LONG).show()
                                                 navController.popBackStack()
                                             }
                                         }
@@ -166,7 +194,7 @@ class MainActivity : ComponentActivity() {
                             }
 
                             composable("order_success") {
-                                hu.bobenc.gyumizoli.ui.basket.OrderSuccessView(
+                                OrderSuccessView(
                                     viewModel = sharedBasketViewModel,
                                     onNavigateHome = {
                                         sharedBasketViewModel.resetOrderStatus()
@@ -186,6 +214,10 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 )
+                            }
+
+                            composable(Screen.Orders.route) {
+                                OrdersView(onBackClick = { navController.popBackStack() })
                             }
 
                             composable(Screen.Search.route) {
