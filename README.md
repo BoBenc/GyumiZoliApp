@@ -52,6 +52,10 @@ php artisan key:generate
 ```cmd
 php artisan migrate
 ```
+* Állítsd be a képek tárolását
+```cmd
+php artisan storage:link
+```
 * Indítsd el a Laravel szervert az alábbi paranccsal:
 ```cmd
 php artisan serve --host=192.x.x.x --port=8000
